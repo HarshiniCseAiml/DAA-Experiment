@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>MST Visualizer</title>
+
+<style>
+
+body{
+font-family:Arial,sans-serif;
+background:#eef5ff;
+margin:0;
+}
+
+.container{
+max-width:950px;
+margin:30px auto;
+background:white;
+padding:25px;
+border-radius:10px;
+box-shadow:0 2px 10px rgba(0,0,0,.2);
+}
+
+h1{
+text-align:center;
+color:#1d4f91;
+}
+
+textarea{
+width:100%;
+height:180px;
+padding:10px;
+font-size:15px;
+}
+
+select{
+
+padding:10px;
+font-size:15px;
+margin-top:10px;
+
+}
+
+button{
+
+padding:10px 20px;
+background:#1d4f91;
+color:white;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin-left:10px;
+
+}
+
+button:hover{
+
+background:#163d72;
+
+}
+
+.info{
+
+margin-top:20px;
+padding:15px;
+background:#f4f8ff;
+border-left:5px solid #1d4f91;
+
+}
+
+table{
+
+width:100%;
+margin-top:20px;
+border-collapse:collapse;
+
+}
+
+td,th{
+
+border:1px solid #999;
+padding:10px;
+text-align:center;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Minimum Spanning Tree Visualizer</h1>
+
+<p><b>Enter Adjacency Matrix</b></p>
+
+<textarea id="matrix">
+0 2 0 6 0
+2 0 3 8 5
+0 3 0 0 7
+6 8 0 0 9
+0 5 7 9 0
+</textarea>
+
+<select id="algo">
+
+<option value="kruskal">
+
+Kruskal Algorithm
+
+</option>
+
+<option value="prim">
+
+Prim Algorithm
+
+</option>
+
+</select>
+
+<button onclick="start()">
+
+Visualize
+
+</button>
+
+<div id="tableArea"></div>
+
+<div class="info">
+
+<p>
+
+<b>Algorithm :</b>
+
+<span id="algoname">
+
+-
+
+</span>
+
+</p>
+
+<p>
+
+<b>Total Cost :</b>
+
+<span id="cost">
+
+-
+
+</span>
+
+</p>
+
+<p>
+
+<b>Time Complexity :</b>
+
+<span id="tc">
+
+-
+
+</span>
+
+</p>
+
+</div>
+
+<script>
+
+let graph=[];
+let n;
+
+function sleep(ms){
+return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+function find(parent,i){
+
+if(parent[i]!=i)
+parent[i]=find(parent,parent[i]);
+
+return parent[i];
+
+}
+
+function union(parent,rank,x,y){
+
+let xr=find(parent,x);
+
+let yr=find(parent,y);
+
+if(rank[xr]<rank[yr]){
+
+parent[xr]=yr;
+
+}
+else if(rank[xr]>rank[yr]){
+
+parent[yr]=xr;
+
+}
+else{
+
+parent[yr]=xr;
+
+rank[xr]++;
+
+}
+
+}
+
+async function start(){
+
+graph=[];
+
+let rows=document
+.getElementById("matrix")
+.value
+.trim()
+.split("\n");
+
+for(let r of rows){
+
+graph.push(
+
+r.trim()
+.split(/\s+/)
+.map(Number)
+
+);
+
+}
+
+n=graph.length;
+
+document.getElementById("tableArea").innerHTML="";
+
+let algo=document
+.getElementById("algo")
+.value;
+
+if(algo=="kruskal"){
+
+document.getElementById("algoname").innerHTML=
+"Kruskal Algorithm";
+
+document.getElementById("tc").innerHTML=
+"O(E log E)";
+
+await kruskal();
+
+}
+else{
+
+document.getElementById("algoname").innerHTML=
+"Prim Algorithm";
+
+document.getElementById("tc").innerHTML=
+"O(V²)";
+
+await prim();
+
+}
+
+}
+async function kruskal(){
+
+let edges=[];
+
+for(let i=0;i<n;i++){
+
+for(let j=i+1;j<n;j++){
+
+if(graph[i][j]!=0){
+
+edges.push([graph[i][j],i,j]);
+
+}
+
+}
+
+}
+
+edges.sort((a,b)=>a[0]-b[0]);
+
+let parent=[];
+let rank=[];
+
+for(let i=0;i<n;i++){
+
+parent[i]=i;
+rank[i]=0;
+
+}
+
+let html="<table>";
+html+="<tr><th>Edge</th><th>Weight</th></tr>";
+
+let total=0;
+
+for(let e of edges){
+
+let w=e[0];
+let u=e[1];
+let v=e[2];
+
+let x=find(parent,u);
+let y=find(parent,v);
+
+if(x!=y){
+
+union(parent,rank,x,y);
+
+total+=w;
+
+html+="<tr><td>"+u+" → "+v+"</td><td>"+w+"</td></tr>";
+
+tableArea.innerHTML=html+"</table>";
+
+cost.innerHTML=total;
+
+await sleep(600);
+
+}
+
+}
+
+tableArea.innerHTML=html+"</table>";
+
+cost.innerHTML=total;
+
+}
+
+async function prim(){
+
+let selected=new Array(n).fill(false);
+
+selected[0]=true;
+
+let total=0;
+
+let html="<table>";
+html+="<tr><th>Edge</th><th>Weight</th></tr>";
+
+for(let c=0;c<n-1;c++){
+
+let min=999999;
+
+let x=-1;
+let y=-1;
+
+for(let i=0;i<n;i++){
+
+if(selected[i]){
+
+for(let j=0;j<n;j++){
+
+if(!selected[j] && graph[i][j]!=0){
+
+if(graph[i][j]<min){
+
+min=graph[i][j];
+
+x=i;
+
+y=j;
+
+}
+
+}
+
+}
+
+}
+
+}
+
+selected[y]=true;
+
+total+=min;
+
+html+="<tr><td>"+x+" → "+y+"</td><td>"+min+"</td></tr>";
+
+tableArea.innerHTML=html+"</table>";
+
+cost.innerHTML=total;
+
+await sleep(600);
+
+}
+
+tableArea.innerHTML=html+"</table>";
+
+cost.innerHTML=total;
+
+}
+</script>
+
+</body>
+
+</html>
